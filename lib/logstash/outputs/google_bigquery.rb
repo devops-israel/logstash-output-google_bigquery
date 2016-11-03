@@ -97,6 +97,9 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
   # BigQuery dataset to which these events will be added to.
   config :dataset, :validate => :string, :required => true
 
+  # BigQuery table name to which these events will be added to.
+  config :table_id, :validate => :string, :default => nil
+
   # BigQuery table ID prefix to be used when creating new tables for log data.
   # Table name will be <table_prefix><table_separator><date>
   config :table_prefix, :validate => :string, :default => "logstash"
@@ -192,8 +195,8 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
 
       @json_schema = { "fields" => @fields }
     end
-    if @json_schema.nil?
-      raise "Configuration must provide either json_schema or csv_schema."
+    if @json_schema.nil? and @table_id.nil?
+      raise "Configuration must provide either json_schema or csv_schema if no table_id is provided."
     end
 
     @upload_queue = Queue.new
@@ -542,7 +545,12 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
   # Uploads a local file to the configured bucket.
   def upload_object(filename)
     begin
-      table_id = @table_prefix + @table_separator + get_date_pattern(filename)
+      if @table_id.nil?
+        table_id = @table_prefix + @table_separator + get_date_pattern(filename)
+      else
+        table_id = @table_id
+      end
+
       # BQ does not accept anything other than alphanumeric and _
       # Ref: https://developers.google.com/bigquery/browser-tool-quickstart?hl=en
       table_id.tr!(':-','_')
@@ -555,7 +563,6 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
         "configuration" => {
           "load" => {
             "sourceFormat" => "NEWLINE_DELIMITED_JSON",
-            "schema" => @json_schema,
             "destinationTable"  =>  {
               "projectId" => @project_id,
               "datasetId" => @dataset,
@@ -567,6 +574,8 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
           }
         }
       }
+      body["configuration"]["load"]["schema"] = @json_schema if !@json_schema.nil?
+      
       insert_result = @client.execute(:api_method => @bq.jobs.insert,
                                       :body_object => body,
                                       :parameters => {
