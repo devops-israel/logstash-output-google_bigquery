@@ -568,14 +568,24 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
               "datasetId" => @dataset,
               "tableId" => table_id
             },
-            'createDisposition' => 'CREATE_IF_NEEDED',
             'writeDisposition' => 'WRITE_APPEND',
             'ignoreUnknownValues' => @ignore_unknown_values
           }
         }
       }
-      body["configuration"]["load"]["schema"] = @json_schema if !@json_schema.nil?
-      
+
+      if !@json_schema.nil?
+        body["configuration"]["load"].merge({
+          'schema' => @json_schema,
+          'createDisposition' => 'CREATE_IF_NEEDED',
+        })
+      else
+        body["configuration"]["load"].merge({
+          'schema' => @json_schema,
+          'createDisposition' => 'CREATE_NEVER',
+        })
+      end
+
       insert_result = @client.execute(:api_method => @bq.jobs.insert,
                                       :body_object => body,
                                       :parameters => {
