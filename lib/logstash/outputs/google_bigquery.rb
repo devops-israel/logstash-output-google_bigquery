@@ -383,6 +383,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
 
         if File.size(filename) > 0
           job_id = upload_object(filename)
+          @logger.error("uploaded file #{filename} with job_id #{job_id}")
           @delete_queue << { "filename" => filename, "job_id" => job_id }
           File.open(filename + ".bqjob", 'w') { |file| file.write(job_id) }
         else
