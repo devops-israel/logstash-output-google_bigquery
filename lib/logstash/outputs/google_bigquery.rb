@@ -392,7 +392,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
           File.delete(filename)
         end
 
-        sleep @uploader_interval_secs
+        sleep 1 #@uploader_interval_secs
       end
     end
   end
