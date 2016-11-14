@@ -595,10 +595,10 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
                                       },
                                       :media => media)
 
-      @logger.error(insert_result.inspect)
-
       media.close()
       response_body = LogStash::Json.load(insert_result.response.body)
+
+      @logger.error(response_body.inspect)
 
       raise_if_error(response_body)
 
