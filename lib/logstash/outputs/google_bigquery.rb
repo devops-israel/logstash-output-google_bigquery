@@ -556,7 +556,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
       # Ref: https://developers.google.com/bigquery/browser-tool-quickstart?hl=en
       table_id.tr!(':-','_')
 
-      @logger.debug("BQ: upload object.",
+      @logger.error("BQ: upload object.",
                     :filename => filename,
                     :table_id => table_id)
       media = Google::APIClient::UploadIO.new(filename, "application/octet-stream")
@@ -595,13 +595,15 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
                                       },
                                       :media => media)
 
+      @logger.error(insert_result.inspect)
+
       media.close()
       response_body = LogStash::Json.load(insert_result.response.body)
 
       raise_if_error(response_body)
 
       job_id = response_body["jobReference"]["jobId"]
-      @logger.debug("BQ: multipart insert",
+      @logger.error("BQ: multipart insert",
                     :job_id => job_id)
       return job_id
     rescue => e
