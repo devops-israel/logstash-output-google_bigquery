@@ -356,7 +356,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
   # Uploader is done in a separate thread, not holding the receive method above.
   def initialize_uploader
     @uploader = Thread.new do
-      @logger.debug("BQ: starting uploader")
+      @logger.info("BQ: starting uploader")
       while true
         filename = @upload_queue.pop
 
@@ -364,7 +364,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
         if filename == @temp_file.to_path
           if @current_base_path == get_base_path()
             if Time.now - @last_file_time < @uploader_interval_secs
-              @logger.debug("BQ: reenqueue as log file is being currently appended to.",
+              @logger.info("BQ: reenqueue as log file is being currently appended to.",
                             :filename => filename)
               @upload_queue << filename
               # If we got here, it means that older files were uploaded, so let's
@@ -372,7 +372,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
               sleep @uploader_interval_secs
               next
             else
-              @logger.debug("BQ: flush and close file to be uploaded.",
+              @logger.info("BQ: flush and close file to be uploaded.",
                             :filename => filename)
               @temp_file.flush()
               @temp_file.close()
@@ -386,13 +386,13 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
           @delete_queue << { "filename" => filename, "job_id" => job_id }
           File.open(filename + ".bqjob", 'w') { |file| file.write(job_id) }
         else
-          @logger.debug("BQ: skipping empty file.")
-          @logger.debug("BQ: delete local temporary file ",
+          @logger.info("BQ: skipping empty file.")
+          @logger.info("BQ: delete local temporary file ",
                         :filename => filename)
           File.delete(filename)
         end
 
-        sleep 1 #@uploader_interval_secs
+        sleep @uploader_interval_secs
       end
     end
   end
