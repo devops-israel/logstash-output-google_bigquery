@@ -598,7 +598,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
       media.close()
       response_body = LogStash::Json.load(insert_result.response.body)
 
-      @logger.debug(response_body.inspect)
+      @logger.error(response_body.inspect)
 
       raise_if_error(response_body)
 
