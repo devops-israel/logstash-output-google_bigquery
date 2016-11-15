@@ -356,7 +356,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
   # Uploader is done in a separate thread, not holding the receive method above.
   def initialize_uploader
     @uploader = Thread.new do
-      @logger.error("BQ: starting uploader")
+      @logger.debug("BQ: starting uploader")
       while true
         filename = @upload_queue.pop
 
@@ -364,7 +364,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
         if filename == @temp_file.to_path
           if @current_base_path == get_base_path()
             if Time.now - @last_file_time < @uploader_interval_secs
-              @logger.error("BQ: reenqueue as log file is being currently appended to.",
+              @logger.debug("BQ: reenqueue as log file is being currently appended to.",
                             :filename => filename)
               @upload_queue << filename
               # If we got here, it means that older files were uploaded, so let's
@@ -372,7 +372,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
               sleep @uploader_interval_secs
               next
             else
-              @logger.error("BQ: flush and close file to be uploaded.",
+              @logger.debug("BQ: flush and close file to be uploaded.",
                             :filename => filename)
               @temp_file.flush()
               @temp_file.close()
@@ -383,12 +383,12 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
 
         if File.size(filename) > 0
           job_id = upload_object(filename)
-          @logger.error("uploaded file #{filename} with job_id #{job_id}")
+          @logger.debug("uploaded file #{filename} with job_id #{job_id}")
           @delete_queue << { "filename" => filename, "job_id" => job_id }
           File.open(filename + ".bqjob", 'w') { |file| file.write(job_id) }
         else
-          @logger.error("BQ: skipping empty file.")
-          @logger.error("BQ: delete local temporary file ",
+          @logger.debug("BQ: skipping empty file.")
+          @logger.debug("BQ: delete local temporary file ",
                         :filename => filename)
           File.delete(filename)
         end
@@ -556,7 +556,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
       # Ref: https://developers.google.com/bigquery/browser-tool-quickstart?hl=en
       table_id.tr!(':-','_')
 
-      @logger.error("BQ: upload object.",
+      @logger.debug("BQ: upload object.",
                     :filename => filename,
                     :table_id => table_id)
       media = Google::APIClient::UploadIO.new(filename, "application/octet-stream")
@@ -598,12 +598,12 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
       media.close()
       response_body = LogStash::Json.load(insert_result.response.body)
 
-      @logger.error(response_body.inspect)
+      @logger.debug(response_body.inspect)
 
       raise_if_error(response_body)
 
       job_id = response_body["jobReference"]["jobId"]
-      @logger.error("BQ: multipart insert",
+      @logger.debug("BQ: multipart insert",
                     :job_id => job_id)
       return job_id
     rescue => e
