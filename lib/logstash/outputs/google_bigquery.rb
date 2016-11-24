@@ -402,8 +402,7 @@ class LogStash::Outputs::GoogleBigQuery < LogStash::Outputs::Base
   # Returns undated path used to construct base path and final full path.
   # This path only includes directory, prefix, and hostname info.
   def get_undated_path
-    return @temp_directory + File::SEPARATOR + @temp_file_prefix + "_" +
-      Socket.gethostname()
+    return @temp_directory + File::SEPARATOR + @temp_file_prefix
   end
 
   ##
